@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoteKe — Voting System</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green: #1a7a4a;
+    --green-light: #e6f5ec;
+    --green-mid: #2ecc71;
+    --gold: #d4a017;
+    --gold-light: #fef8e7;
+    --red: #c0392b;
+    --red-light: #fdecea;
+    --dark: #0d1117;
+    --dark2: #161b22;
+    --dark3: #21262d;
+    --dark4: #30363d;
+    --border: rgba(255,255,255,0.08);
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --card-bg: #161b22;
+    --accent: #2ecc71;
+  }
+
+  html, body {
+    height: 100%; min-height: 100vh;
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'Sora', sans-serif;
+    font-size: 15px;
+    overflow-x: hidden;
+  }
+
+  /* NAV */
+  .topnav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(13,17,23,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2rem;
+    height: 58px;
+  }
+  .nav-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+  .nav-logo span { color: var(--text); }
+  .nav-tabs { display: flex; gap: 4px; }
+  .nav-tab {
+    padding: 6px 16px; border-radius: 6px; font-size: 13px; font-weight: 500;
+    cursor: pointer; border: none; background: transparent; color: var(--muted);
+    transition: all 0.2s;
+  }
+  .nav-tab:hover { color: var(--text); background: var(--dark3); }
+  .nav-tab.active { background: var(--dark3); color: var(--text); border: 1px solid var(--border); }
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+  .nav-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--dark3); border: 1px solid var(--border);
+    border-radius: 20px; padding: 4px 12px; font-size: 13px;
+  }
+  .dot-live { width: 7px; height: 7px; border-radius: 50%; background: #2ecc71;
+    box-shadow: 0 0 6px #2ecc71; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* PAGES */
+  .page { display: none; animation: fadeIn 0.3s ease; }
+  .page.active { display: block; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ===== VOTER PAGE ===== */
+  .voter-hero {
+    background: linear-gradient(135deg, #0d1117 0%, #0a1f0f 50%, #0d1117 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 3rem 2rem 2.5rem;
+    text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .voter-hero::before {
+    content:''; position: absolute; top:-100px; left:50%; transform:translateX(-50%);
+    width: 600px; height: 600px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(46,204,113,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; color: var(--accent); text-transform: uppercase; margin-bottom: 10px; }
+  .hero-title { font-family: 'DM Serif Display', serif; font-size: 42px; line-height: 1.1; color: var(--text); margin-bottom: 12px; }
+  .hero-title em { color: var(--accent); font-style: italic; }
+  .hero-sub { font-size: 15px; color: var(--muted); max-width: 440px; margin: 0 auto 24px; line-height: 1.6; }
+  .cost-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(46,204,113,0.1); border: 1px solid rgba(46,204,113,0.25);
+    border-radius: 999px; padding: 6px 16px; font-size: 14px; font-weight: 500;
+    color: var(--accent);
+  }
+
+  /* WALLET CARD */
+  .voter-body { max-width: 900px; margin: 0 auto; padding: 2rem; }
+  .wallet-card {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.25rem 1.5rem;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 2rem;
+    position: relative; overflow: hidden;
+  }
+  .wallet-card::before {
+    content:''; position:absolute; right:-40px; top:-40px;
+    width:120px; height:120px; border-radius:50%;
+    background: radial-gradient(circle, rgba(46,204,113,0.08) 0%, transparent 70%);
+  }
+  .wallet-info { display:flex; flex-direction:column; gap:2px; }
+  .wallet-label { font-size: 12px; color: var(--muted); font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; }
+  .wallet-amount { font-size: 28px; font-weight: 600; color: var(--text); }
+  .wallet-amount span { font-size: 16px; color: var(--muted); font-weight: 400; }
+  .wallet-actions { display:flex; gap:8px; }
+  .btn { padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; font-family: 'Sora', sans-serif; }
+  .btn-primary { background: var(--accent); color: #0d1117; }
+  .btn-primary:hover { background: #27ae60; transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-sm { padding: 7px 14px; font-size: 12px; }
+
+  /* CANDIDATE CARDS */
+  .section-label { font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 1rem; display: flex; align-items:center; gap:8px; }
+  .section-label::after { content:''; flex:1; height:1px; background: var(--border); }
+  .candidates-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 2rem; }
+
+  .cand-card {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 16px; padding: 1.5rem;
+    cursor: pointer; transition: all 0.2s;
+    position: relative; overflow: hidden;
+  }
+  .cand-card::before {
+    content:''; position:absolute; inset:0; opacity:0;
+    transition: opacity 0.2s;
+    border-radius: 16px;
+  }
+  .cand-card:hover { border-color: rgba(46,204,113,0.4); transform: translateY(-2px); }
+  .cand-card:hover::before { opacity: 1; }
+
+  .cand-top { display:flex; align-items:center; gap:14px; margin-bottom: 16px; }
+  .cand-avatar {
+    width: 52px; height: 52px; border-radius: 50%;
+    display: flex; align-items:center; justify-content:center;
+    font-size: 18px; font-weight: 700; flex-shrink: 0;
+  }
+  .av1 { background: linear-gradient(135deg, #1a4a7a, #2980b9); color: #a8d8f0; }
+  .av2 { background: linear-gradient(135deg, #4a1a7a, #8e44ad); color: #d8a8f0; }
+  .av3 { background: linear-gradient(135deg, #7a4a1a, #e67e22); color: #f0d8a8; }
+  .av4 { background: linear-gradient(135deg, #1a7a4a, #27ae60); color: #a8f0c8; }
+
+  .cand-info { flex: 1; min-width: 0; }
+  .cand-name { font-size: 16px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cand-tag { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .cand-rank { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+  .rank-1 { background: rgba(212,160,23,0.15); color: var(--gold); border: 1px solid rgba(212,160,23,0.3); }
+  .rank-other { background: var(--dark3); color: var(--muted); border: 1px solid var(--border); }
+
+  .cand-stats { display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; }
+  .cand-votes { font-size: 22px; font-weight: 700; color: var(--text); }
+  .cand-votes small { font-size: 12px; color: var(--muted); font-weight: 400; }
+  .cand-pct { font-size: 13px; color: var(--muted); }
+
+  .progress-track { height: 5px; background: var(--dark4); border-radius: 999px; overflow: hidden; margin-bottom: 14px; }
+  .progress-fill { height: 100%; border-radius: 999px; transition: width 0.5s ease; }
+  .p1 { background: linear-gradient(90deg, #2980b9, #3498db); }
+  .p2 { background: linear-gradient(90deg, #8e44ad, #9b59b6); }
+  .p3 { background: linear-gradient(90deg, #e67e22, #f39c12); }
+  .p4 { background: linear-gradient(90deg, #27ae60, #2ecc71); }
+
+  .vote-action { display:flex; align-items:center; justify-content:space-between; }
+  .vote-cost { font-size: 12px; color: var(--muted); }
+  .vote-cost strong { color: var(--accent); }
+  .btn-vote { padding: 8px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; background: var(--accent); color: #0d1117; transition: all 0.2s; font-family: 'Sora', sans-serif; }
+  .btn-vote:hover { background: #27ae60; }
+  .btn-vote:disabled { background: var(--dark4); color: var(--muted); cursor: not-allowed; }
+
+  /* VOTE LOG */
+  .log-section { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; }
+  .log-list { max-height: 160px; overflow-y: auto; }
+  .log-entry { display: flex; align-items:center; justify-content:space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .log-entry:last-child { border-bottom: none; }
+  .log-name { color: var(--text); font-weight: 500; }
+  .log-time { color: var(--muted); font-size: 12px; }
+  .log-cost { color: var(--accent); font-weight: 600; font-size: 12px; }
+  .log-empty { text-align:center; padding: 20px; color: var(--muted); font-size: 13px; }
+
+  /* ===== RESULTS PAGE ===== */
+  .results-body { max-width: 960px; margin: 0 auto; padding: 2rem; }
+  .results-header { text-align:center; padding: 2.5rem 1rem 2rem; }
+  .results-title { font-family: 'DM Serif Display', serif; font-size: 36px; color: var(--text); margin-bottom: 8px; }
+  .results-sub { color: var(--muted); font-size: 14px; }
+
+  .metrics-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 2rem; }
+  .metric-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem 1.25rem; }
+  .metric-val { font-size: 26px; font-weight: 700; color: var(--text); }
+  .metric-lbl { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .winner-banner {
+    background: linear-gradient(135deg, rgba(26,74,26,0.3), rgba(46,204,113,0.08));
+    border: 1px solid rgba(46,204,113,0.25);
+    border-radius: 14px; padding: 1.5rem;
+    display: flex; align-items:center; gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .winner-crown { font-size: 40px; }
+  .winner-text h3 { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--accent); }
+  .winner-text p { color: var(--muted); font-size: 14px; margin-top: 3px; }
+
+  .bar-chart { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 1.5rem; margin-bottom: 2rem; }
+  .bar-row { display:flex; align-items:center; gap: 12px; margin-bottom: 14px; }
+  .bar-row:last-child { margin-bottom: 0; }
+  .bar-label { width: 130px; font-size: 13px; color: var(--text); font-weight: 500; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bar-track { flex:1; height: 32px; background: var(--dark3); border-radius: 6px; overflow:hidden; position:relative; }
+  .bar-fill-h { height: 100%; border-radius: 6px; display:flex; align-items:center; padding-left:10px; transition: width 0.6s ease; }
+  .bar-fill-h span { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.9); white-space:nowrap; }
+  .bar-num { width: 80px; text-align:right; font-size: 13px; color: var(--muted); flex-shrink:0; }
+
+  .bh1 { background: linear-gradient(90deg, #1a4a7a, #2980b9); }
+  .bh2 { background: linear-gradient(90deg, #4a1a7a, #8e44ad); }
+  .bh3 { background: linear-gradient(90deg, #7a4a1a, #e67e22); }
+  .bh4 { background: linear-gradient(90deg, #1a7a4a, #27ae60); }
+
+  /* ===== ADMIN PAGE ===== */
+  .admin-body { max-width: 1000px; margin: 0 auto; padding: 2rem; }
+  .admin-header { margin-bottom: 2rem; }
+  .admin-header h2 { font-size: 22px; font-weight: 600; color: var(--text); }
+  .admin-header p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+
+  .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 2rem; }
+  .admin-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; }
+  .admin-card h4 { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 1rem; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+  .control-row { display:flex; align-items:center; justify-content:space-between; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .control-row:last-child { border-bottom: none; }
+  .control-label { font-size: 13px; color: var(--muted); }
+  .control-val { font-size: 13px; font-weight: 600; color: var(--text); }
+  .status-on { color: var(--accent); }
+  .status-off { color: var(--red); }
+
+  .toggle { position:relative; display:inline-block; width:42px; height:24px; }
+  .toggle input { display:none; }
+  .toggle-slider { position:absolute; cursor:pointer; inset:0; background:var(--dark4); border-radius:999px; transition:0.3s; }
+  .toggle-slider::before { content:''; position:absolute; width:18px; height:18px; left:3px; top:3px; border-radius:50%; background:var(--muted); transition:0.3s; }
+  .toggle input:checked + .toggle-slider { background: rgba(46,204,113,0.2); border: 1px solid rgba(46,204,113,0.4); }
+  .toggle input:checked + .toggle-slider::before { transform:translateX(18px); background:var(--accent); }
+
+  .candidate-table { width:100%; border-collapse:collapse; }
+  .candidate-table th { font-size: 11px; font-weight: 600; color: var(--muted); text-transform:uppercase; letter-spacing:0.08em; text-align:left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  .candidate-table td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px; color: var(--text); }
+  .candidate-table tr:last-child td { border-bottom: none; }
+  .td-muted { color: var(--muted) !important; }
+  .td-green { color: var(--accent) !important; font-weight: 600; }
+  .td-gold { color: var(--gold) !important; font-weight: 600; }
+
+  .btn-danger { background: transparent; border: 1px solid rgba(192,57,43,0.4); color: var(--red); padding: 6px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: 'Sora', sans-serif; font-weight: 600; transition: all 0.2s; }
+  .btn-danger:hover { background: rgba(192,57,43,0.1); }
+  .btn-success { background: rgba(46,204,113,0.1); border: 1px solid rgba(46,204,113,0.3); color: var(--accent); padding: 6px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: 'Sora', sans-serif; font-weight: 600; transition: all 0.2s; }
+  .btn-success:hover { background: rgba(46,204,113,0.2); }
+
+  .revenue-card { grid-column: 1 / -1; background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; }
+  .revenue-row { display:flex; align-items:center; gap: 16px; }
+  .rev-block { flex:1; text-align:center; padding: 1rem; background: var(--dark3); border-radius: 10px; }
+  .rev-val { font-size: 24px; font-weight: 700; color: var(--text); }
+  .rev-lbl { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .rev-sep { width: 1px; height: 60px; background: var(--border); }
+
+  /* MODAL */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:200; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+  .modal-overlay.open { display:flex; }
+  .modal-box { background: var(--dark2); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; width: 340px; }
+  .modal-box h3 { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+  .modal-box p { font-size: 14px; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+  .modal-input { width:100%; padding: 10px 14px; background: var(--dark3); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 15px; font-family: 'Sora', sans-serif; outline:none; transition: border-color 0.2s; }
+  .modal-input:focus { border-color: var(--accent); }
+  .modal-btns { display:flex; gap:10px; margin-top: 16px; }
+  .modal-btns button { flex:1; padding: 10px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor:pointer; font-family:'Sora',sans-serif; }
+  .modal-cancel { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+  .modal-confirm { background: var(--accent); border: none; color: #0d1117; }
+
+  /* TOAST */
+  .toast { position:fixed; bottom: 24px; left:50%; transform: translateX(-50%) translateY(80px); background: var(--dark2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 20px; font-size: 14px; color: var(--text); z-index: 300; transition: transform 0.3s ease; display:flex; align-items:center; gap:8px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--dark4); border-radius: 3px; }
+
+  @media (max-width: 640px) {
+    .candidates-grid, .admin-grid, .metrics-row { grid-template-columns: 1fr; }
+    .hero-title { font-size: 28px; }
+    .revenue-row { flex-direction: column; }
+    .rev-sep { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="topnav">
+  <div class="nav-logo">Vote<span>Ke</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('voter')">🗳️ Vote</button>
+    <button class="nav-tab" onclick="showPage('results')">📊 Results</button>
+    <button class="nav-tab" onclick="showPage('admin')">⚙️ Admin</button>
+  </div>
+  <div class="nav-right">
+    <div class="nav-badge"><div class="dot-live"></div>Live</div>
+  </div>
+</nav>
+
+<!-- ============================= VOTER PAGE ============================= -->
+<div id="page-voter" class="page active">
+  <div class="voter-hero">
+    <div class="hero-eyebrow">Season 1 · 2025</div>
+    <h1 class="hero-title">Cast Your <em>Vote</em></h1>
+    <p class="hero-sub">Support your favourite contestant. Every vote counts — results update in real time.</p>
+    <div class="cost-pill">💰 Ksh 10 per vote &bull; Vote unlimited times</div>
+  </div>
+
+  <div class="voter-body">
+    <!-- Wallet -->
+    <div class="wallet-card">
+      <div class="wallet-info">
+        <div class="wallet-label">M-Pesa Balance</div>
+        <div class="wallet-amount" id="v-balance"><span>Ksh </span><span id="v-bal-num">200</span></div>
+      </div>
+      <div class="wallet-actions">
+        <button class="btn btn-outline btn-sm" onclick="openTopup()">+ Top Up</button>
+      </div>
+    </div>
+
+    <div class="section-label">Choose Your Contestant</div>
+
+    <!-- Candidates -->
+    <div class="candidates-grid" id="voter-grid"></div>
+
+    <!-- Log -->
+    <div class="section-label">Your Voting History</div>
+    <div class="log-section">
+      <div class="log-list" id="vote-log">
+        <div class="log-empty">No votes yet. Cast your first vote above!</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= RESULTS PAGE ============================= -->
+<div id="page-results" class="page">
+  <div class="results-body">
+    <div class="results-header">
+      <h2 class="results-title">Live Results</h2>
+      <p class="results-sub">Updating in real time &bull; Last refreshed: <span id="last-refresh">just now</span></p>
+    </div>
+
+    <div class="metrics-row">
+      <div class="metric-card"><div class="metric-val" id="r-total-votes">0</div><div class="metric-lbl">Total Votes</div></div>
+      <div class="metric-card"><div class="metric-val" id="r-revenue">Ksh 0</div><div class="metric-lbl">Revenue</div></div>
+      <div class="metric-card"><div class="metric-val" id="r-voters">0</div><div class="metric-lbl">Sessions</div></div>
+      <div class="metric-card"><div class="metric-val" id="r-time">--:--</div><div class="metric-lbl">Time Remaining</div></div>
+    </div>
+
+    <div class="winner-banner" id="winner-banner">
+      <div class="winner-crown">👑</div>
+      <div class="winner-text">
+        <h3 id="winner-name">No leader yet</h3>
+        <p id="winner-sub">Cast your votes to see who leads</p>
+      </div>
+    </div>
+
+    <div class="bar-chart">
+      <div class="section-label" style="margin-bottom:1.2rem">Vote Breakdown</div>
+      <div id="results-bars"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= ADMIN PAGE ============================= -->
+<div id="page-admin" class="page">
+  <div class="admin-body">
+    <div class="admin-header">
+      <h2>Admin Dashboard</h2>
+      <p>Manage the voting session, contestants, and settings</p>
+    </div>
+
+    <div class="admin-grid">
+      <!-- Controls -->
+      <div class="admin-card">
+        <h4>⚙️ Session Controls</h4>
+        <div class="control-row">
+          <span class="control-label">Voting Status</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="status-on" id="status-text">Active</span>
+            <label class="toggle"><input type="checkbox" id="voting-toggle" checked onchange="toggleVoting()"><div class="toggle-slider"></div></label>
+          </div>
+        </div>
+        <div class="control-row">
+          <span class="control-label">Cost per Vote</span>
+          <span class="control-val td-green">Ksh 10</span>
+        </div>
+        <div class="control-row">
+          <span class="control-label">Show Live Results</span>
+          <label class="toggle"><input type="checkbox" checked><div class="toggle-slider"></div></label>
+        </div>
+        <div class="control-row">
+          <span class="control-label">Multiple votes allowed</span>
+          <label class="toggle"><input type="checkbox" checked><div class="toggle-slider"></div></label>
+        </div>
+        <div style="margin-top:1rem;display:flex;gap:8px">
+          <button class="btn-danger" onclick="confirmReset()">Reset All Votes</button>
+          <button class="btn-success" onclick="showToast('Results exported!')">Export CSV</button>
+        </div>
+      </div>
+
+      <!-- Countdown -->
+      <div class="admin-card">
+        <h4>⏱️ Voting Window</h4>
+        <div class="control-row">
+          <span class="control-label">Start Time</span>
+          <span class="control-val">Today, 08:00 AM</span>
+        </div>
+        <div class="control-row">
+          <span class="control-label">End Time</span>
+          <span class="control-val">Today, 11:59 PM</span>
+        </div>
+        <div class="control-row">
+          <span class="control-label">Countdown</span>
+          <span class="control-val td-gold" id="admin-countdown">--:--:--</span>
+        </div>
+        <div class="control-row">
+          <span class="control-label">Total Duration</span>
+          <span class="control-val">16 hours</span>
+        </div>
+      </div>
+
+      <!-- Revenue -->
+      <div class="revenue-card">
+        <h4 style="margin-bottom:1rem">💰 Revenue Summary</h4>
+        <div class="revenue-row">
+          <div class="rev-block">
+            <div class="rev-val td-green" id="a-revenue">Ksh 0</div>
+            <div class="rev-lbl">Total Collected</div>
+          </div>
+          <div class="rev-sep"></div>
+          <div class="rev-block">
+            <div class="rev-val" id="a-votes">0</div>
+            <div class="rev-lbl">Votes Cast</div>
+          </div>
+          <div class="rev-sep"></div>
+          <div class="rev-block">
+            <div class="rev-val" id="a-avg">Ksh 0</div>
+            <div class="rev-lbl">Avg per Voter</div>
+          </div>
+          <div class="rev-sep"></div>
+          <div class="rev-block">
+            <div class="rev-val" id="a-top-earner">—</div>
+            <div class="rev-lbl">Most Voted</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Candidate Table -->
+    <div class="admin-card" style="grid-column:1/-1">
+      <h4>👥 Contestant Management</h4>
+      <table class="candidate-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Contestant</th>
+            <th>Votes</th>
+            <th>Share</th>
+            <th>Revenue</th>
+            <th>Rank</th>
+          </tr>
+        </thead>
+        <tbody id="admin-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- TOPUP MODAL -->
+<div class="modal-overlay" id="topup-modal">
+  <div class="modal-box">
+    <h3>💳 Top Up Balance</h3>
+    <p>Enter the amount to add via M-Pesa. You will receive an STK push on your phone.</p>
+    <input class="modal-input" type="number" id="topup-amount" placeholder="e.g. 100" min="10" step="10">
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeTopup()">Cancel</button>
+      <button class="modal-confirm" onclick="confirmTopup()">Add Funds</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESET MODAL -->
+<div class="modal-overlay" id="reset-modal">
+  <div class="modal-box">
+    <h3>⚠️ Reset All Votes?</h3>
+    <p>This will permanently delete all votes and cannot be undone. Are you sure?</p>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeReset()">Cancel</button>
+      <button class="modal-confirm" style="background:var(--red);color:#fff" onclick="doReset()">Yes, Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><div class="toast-dot"></div><span id="toast-msg">Done!</span></div>
+
+<script>
+const VOTE_COST = 10;
+
+let state = {
+  balance: 200,
+  votingOpen: true,
+  totalVotes: 0,
+  sessions: 1,
+  log: [],
+  candidates: [
+    { id:1, name:'Sam Vidambu',         tag:'Contestant A', initials:'SV', avClass:'av1', pClass:'p1', bhClass:'bh1', votes:0 },
+    { id:2, name:'Kelly Inspiration',   tag:'Contestant B', initials:'KI', avClass:'av2', pClass:'p2', bhClass:'bh2', votes:0 },
+    { id:3, name:'Pr. Elizabeth Mokoro',tag:'Contestant C', initials:'EM', avClass:'av3', pClass:'p3', bhClass:'bh3', votes:0 },
+    { id:4, name:'Wambugu wa Kamau',    tag:'Contestant D', initials:'WK', avClass:'av4', pClass:'p4', bhClass:'bh4', votes:0 },
+  ]
+};
+
+function showPage(p) {
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  event.currentTarget.classList.add('active');
+  renderAll();
+}
+
+function getRanks() {
+  const sorted = [...state.candidates].sort((a,b)=>b.votes-a.votes);
+  const ranks = {};
+  sorted.forEach((c,i)=>ranks[c.id]=i+1);
+  return ranks;
+}
+
+function renderVoterCards() {
+  const ranks = getRanks();
+  const maxV = Math.max(...state.candidates.map(c=>c.votes),1);
+  const total = state.totalVotes || 1;
+  const grid = document.getElementById('voter-grid');
+  if (!grid) return;
+  grid.innerHTML = state.candidates.map(c => {
+    const pct = Math.round((c.votes/total)*100);
+    const bar = Math.round((c.votes/maxV)*100);
+    const rank = ranks[c.id];
+    const rankLabel = rank===1 ? '🥇 Leader' : `#${rank}`;
+    const rankClass = rank===1 ? 'rank-1' : 'rank-other';
+    const disabled = (!state.votingOpen || state.balance < VOTE_COST) ? 'disabled' : '';
+    return `<div class="cand-card">
+      <div class="cand-top">
+        <div class="cand-avatar ${c.avClass}">${c.initials}</div>
+        <div class="cand-info">
+          <div class="cand-name">${c.name}</div>
+          <div class="cand-tag">${c.tag}</div>
+        </div>
+        <div class="cand-rank ${rankClass}">${rankLabel}</div>
+      </div>
+      <div class="cand-stats">
+        <div class="cand-votes">${c.votes} <small>votes</small></div>
+        <div class="cand-pct">${pct}%</div>
+      </div>
+      <div class="progress-track"><div class="progress-fill ${c.pClass}" style="width:${bar}%"></div></div>
+      <div class="vote-action">
+        <div class="vote-cost">Cost: <strong>Ksh ${VOTE_COST}</strong></div>
+        <button class="btn-vote" onclick="castVote(${c.id})" ${disabled}>Vote ›</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderVoteLog() {
+  const el = document.getElementById('vote-log');
+  if (!el) return;
+  if (state.log.length === 0) {
+    el.innerHTML = '<div class="log-empty">No votes yet. Cast your first vote above!</div>';
+    return;
+  }
+  el.innerHTML = state.log.slice(0,20).map(l=>`
+    <div class="log-entry">
+      <span class="log-name">Voted for ${l.name}</span>
+      <span class="log-time">${l.time}</span>
+      <span class="log-cost">- Ksh ${VOTE_COST}</span>
+    </div>`).join('');
+}
+
+function renderResults() {
+  const r = document.getElementById('r-total-votes');
+  if (!r) return;
+  r.textContent = state.totalVotes;
+  document.getElementById('r-revenue').textContent = `Ksh ${state.totalVotes * VOTE_COST}`;
+  document.getElementById('r-voters').textContent = state.sessions;
+
+  const leader = [...state.candidates].sort((a,b)=>b.votes-a.votes)[0];
+  const wn = document.getElementById('winner-name');
+  const ws = document.getElementById('winner-sub');
+  if (leader.votes > 0) {
+    const pct = Math.round((leader.votes/state.totalVotes)*100);
+    wn.textContent = leader.name + ' is leading';
+    ws.textContent = `${leader.votes} votes · ${pct}% of total votes`;
+  } else {
+    wn.textContent = 'No leader yet';
+    ws.textContent = 'Cast your votes to see who leads';
+  }
+
+  const total = state.totalVotes || 1;
+  const maxV = Math.max(...state.candidates.map(c=>c.votes),1);
+  const bars = document.getElementById('results-bars');
+  if (!bars) return;
+  const bClasses = ['bh1','bh2','bh3','bh4'];
+  bars.innerHTML = [...state.candidates].sort((a,b)=>b.votes-a.votes).map((c,i) => {
+    const pct = Math.round((c.votes/total)*100);
+    const width = Math.round((c.votes/maxV)*100);
+    return `<div class="bar-row">
+      <div class="bar-label">${c.name}</div>
+      <div class="bar-track">
+        <div class="bar-fill-h ${c.bhClass}" style="width:${Math.max(width,2)}%">
+          <span>${c.votes} votes · ${pct}%</span>
+        </div>
+      </div>
+      <div class="bar-num">Ksh ${c.votes*VOTE_COST}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderAdmin() {
+  const tb = document.getElementById('admin-table-body');
+  if (!tb) return;
+  const total = state.totalVotes || 1;
+  const sorted = [...state.candidates].sort((a,b)=>b.votes-a.votes);
+  tb.innerHTML = sorted.map((c,i)=>{
+    const pct = Math.round((c.votes/total)*100);
+    return `<tr>
+      <td class="td-muted">${i+1}</td>
+      <td><strong>${c.name}</strong></td>
+      <td class="td-green">${c.votes}</td>
+      <td class="td-muted">${pct}%</td>
+      <td class="td-gold">Ksh ${c.votes*VOTE_COST}</td>
+      <td>${i===0 && c.votes>0?'<span class="cand-rank rank-1">🥇 Leader</span>':'<span class="cand-rank rank-other">#'+(i+1)+'</span>'}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('a-revenue').textContent = `Ksh ${state.totalVotes*VOTE_COST}`;
+  document.getElementById('a-votes').textContent = state.totalVotes;
+  document.getElementById('a-avg').textContent = state.sessions>0 ? `Ksh ${Math.round(state.totalVotes*VOTE_COST/state.sessions)}` : 'Ksh 0';
+  const topE = sorted[0];
+  document.getElementById('a-top-earner').textContent = topE.votes>0 ? topE.name.split(' ')[0] : '—';
+}
+
+function renderAll() {
+  document.getElementById('v-bal-num').textContent = state.balance;
+  renderVoterCards();
+  renderVoteLog();
+  renderResults();
+  renderAdmin();
+}
+
+function castVote(id) {
+  if (!state.votingOpen) { showToast('Voting is currently closed'); return; }
+  if (state.balance < VOTE_COST) { openTopup(); return; }
+  const c = state.candidates.find(x=>x.id===id);
+  c.votes++;
+  state.balance -= VOTE_COST;
+  state.totalVotes++;
+  const now = new Date();
+  const t = now.toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  state.log.unshift({name: c.name, time: t});
+  showToast(`Voted for ${c.name}!`);
+  renderAll();
+}
+
+function toggleVoting() {
+  state.votingOpen = document.getElementById('voting-toggle').checked;
+  const st = document.getElementById('status-text');
+  st.textContent = state.votingOpen ? 'Active' : 'Closed';
+  st.className = state.votingOpen ? 'status-on' : 'status-off';
+  showToast(state.votingOpen ? 'Voting opened' : 'Voting closed');
+  renderAll();
+}
+
+function openTopup() {
+  document.getElementById('topup-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('topup-amount').focus(),100);
+}
+function closeTopup() { document.getElementById('topup-modal').classList.remove('open'); }
+function confirmTopup() {
+  const val = parseInt(document.getElementById('topup-amount').value)||0;
+  if (val >= 10) {
+    state.balance += val;
+    showToast(`Ksh ${val} added via M-Pesa!`);
+    renderAll();
+  }
+  closeTopup();
+}
+
+function confirmReset() { document.getElementById('reset-modal').classList.add('open'); }
+function closeReset() { document.getElementById('reset-modal').classList.remove('open'); }
+function doReset() {
+  state.candidates.forEach(c=>c.votes=0);
+  state.totalVotes=0; state.log=[];
+  closeReset(); showToast('All votes reset'); renderAll();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+// Countdown clock
+function updateCountdown() {
+  const now = new Date();
+  const end = new Date(); end.setHours(23,59,59,0);
+  let diff = Math.max(0, end-now);
+  const h = String(Math.floor(diff/3600000)).padStart(2,'0');
+  diff %= 3600000;
+  const m = String(Math.floor(diff/60000)).padStart(2,'0');
+  diff %= 60000;
+  const s = String(Math.floor(diff/1000)).padStart(2,'0');
+  const str = `${h}:${m}:${s}`;
+  const rt = document.getElementById('r-time');
+  const ac = document.getElementById('admin-countdown');
+  const lr = document.getElementById('last-refresh');
+  if(rt) rt.textContent = str;
+  if(ac) ac.textContent = str;
+  if(lr) lr.textContent = new Date().toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+setInterval(updateCountdown, 1000);
+updateCountdown();
+
+renderAll();
+</script>
+</body>
+</html>
